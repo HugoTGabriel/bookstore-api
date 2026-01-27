@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
+from typing import Optional
 from app.schemas.book import BookCreate
 from app.schemas.book import BookUpdate
 from app.models.book import Book
@@ -21,8 +22,13 @@ def creat_book(book: BookCreate, session: Session = Depends(get_session)):
     return db_book
 
 @router.get('/')
-def list_books(session: Session = Depends(get_session)):
+def list_books(
+    status: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
     statement = select(Book)
+    if status:
+        statement = statement.where(Book.status == status)
     books = session.exec(statement).all()
     return books
 
