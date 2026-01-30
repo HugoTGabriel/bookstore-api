@@ -1,73 +1,113 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha BookStore</title>
     <style>
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
         body {
             font-family: sans-serif;
-            margin: 2rem;
             background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
         }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background-color: #f5f5f5;
+            padding-bottom: 1rem;
+        }
+
         h1 {
             color: #333;
         }
+
         .book {
             padding: 10px;
             margin: 10px 0;
             background: #fff;
             border-left: 5px solid #0077cc;
         }
+
+        .status-lendo {
+            border-left-color: #f1c40f;
+        }
+
+        .status-lido {
+            border-left-color: #2ecc71;
+        }
+
+        .status-pendente {
+            border-left-color: #e74c3c;
+        }
+
         form {
             margin-top: 2rem;
         }
 
-        input, select, button {
+        input,
+        select,
+        button {
             margin: 0.3rem;
             padding: 0.4rem;
         }
     </style>
 </head>
-<body>
-    <h1>Livros cadastrados</h1>
-    <div id="book-list"></div>
 
-    <h2>Adicionar novo livro</h2>
-    <form id="book-form">
-        <input type="text" id="title" placeholder="Título" required>
-        <input type="text" id="author" placeholder="Autor" required>
-        <select id="status">
-            <option value="lendo">Lendo</option>
-            <option value="lido">Lido</option>
-            <option value="pendente">Pendente</option>
-        </select>
-        <button type="submit">Adicionar</button>
-    </form>
+<body>
+    <div class="container">
+
+        <h1>Livros cadastrados</h1>
+
+        <h2>Adicionar novo livro</h2>
+        <form id="book-form">
+            <input type="text" id="title" placeholder="Título" required>
+            <input type="text" id="author" placeholder="Autor" required>
+            <select id="status">
+                <option value="lendo">Lendo</option>
+                <option value="lido">Lido</option>
+                <option value="pendente">Pendente</option>
+            </select>
+            <button type="submit">Adicionar</button>
+        </form>
+        <div id="book-list"></div>
+    </div>
 
     <script>
         fetch('http://localhost:8000/books/')
-        .then(res => res.json())
-        .then(data => {
-            const list = document.getElementById('book-list');
-            data.forEach(book => {
-                const div = document.createElement('div');
-                div.className = 'book';
-                div.id = `book-${book.id}`;
-                div.innerHTML = `
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('book-list');
+                data.forEach(book => {
+                    const div = document.createElement('div');
+                    div.className = `book status-${book.status}`;
+                    div.id = `book-${book.id}`;
+                    div.innerHTML = `
                     <strong>${book.title}</strong><br>
                     Autor: ${book.author}<br>
-                    Status: ${book.status}
-                    <button onclick='deleteBook(${book.id})'>Remover</button>
-                `;
-                list.appendChild(div);
-            });
-        })
-        .catch(err => {
-            console.error("Erro ao carregar livros", err);
-        });
+                    Status: <span id="status-${book.id}">${book.status}</span><br>
 
-        document.getElementById("book-form").addEventListener("submit", function(e) {
+                    <button onclick="updateStatus(${book.id}, 'lendo')">Lendo</button>
+                    <button onclick="updateStatus(${book.id}, 'lido')">Lido</button>
+                    <button onclick="updateStatus(${book.id}, 'pendente')">Pendente</button>
+                    
+                    <button onclick="deleteBook(${book.id})">Remover</button>
+                `;
+                    list.appendChild(div);
+                });
+            })
+            .catch(err => {
+                console.error("Erro ao carregar livros", err);
+            });
+
+        document.getElementById("book-form").addEventListener("submit", function (e) {
             e.preventDefault();
 
             const newBook = {
@@ -81,35 +121,56 @@
                 headers: { 'Content-type': 'application/json' },
                 body: JSON.stringify(newBook)
             })
-            .then(res => res.json())
-            .then(book => {
-                const list = document.getElementById('book-list');
-                const div = document.createElement('div');
-                div.className = 'book';
-                div.id = `book-${book.id}`;
-                div.innerHTML = `
+                .then(res => res.json())
+                .then(book => {
+                    const list = document.getElementById('book-list');
+                    const div = document.createElement('div');
+                    div.className = `book status-${book.status}`;
+                    div.id = `book-${book.id}`;
+                    div.innerHTML = `
                     <strong>${book.title}</strong><br>
                     Autor: ${book.author}<br>
-                    Status: ${book.status}
-                    <button onclick='deleteBook(${book.id})'>Remover</button>
-                `;
-                list.appendChild(div);
-                document.getElementById('book-form').reset();
-            })
-            .catch(err => console.error('Erro ao adicionar livro', err));
+                    Status: <span id="status-${book.id}">${book.status}</span><br>
+
+                        <button onclick="updateStatus(${book.id}, 'lendo')">Lendo</button>
+                        <button onclick="updateStatus(${book.id}, 'lido')">Lido</button>
+                        <button onclick="updateStatus(${book.id}, 'pendente')">Pendente</button>
+                    
+                        <button onclick="deleteBook(${book.id})">Remover</button>
+                    `;
+                    list.appendChild(div);
+                    document.getElementById('book-form').reset();
+                })
+                .catch(err => console.error('Erro ao adicionar livro', err));
         });
 
         function deleteBook(id) {
             fetch(`http://localhost:8000/books/${id}`, {
                 method: 'DELETE'
             })
-            .then(() => {
-                document.getElementById(`book-${id}`).remove();
-            })
-            .catch(err => console.error('Erro ao deletar livro', err));
+                .then(() => {
+                    document.getElementById(`book-${id}`).remove();
+                })
+                .catch(err => console.error('Erro ao deletar livro', err));
         }
 
-
+        function updateStatus(id, status) {
+            fetch(`http://localhost:8000/books/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status })
+            })
+            .then(res => res.json())
+            .then(updateBook => {
+                document.getElementById(`status-${id}`).innerText = updateBook.status;
+                const bookDiv = document.getElementById(`book-${id}`);
+                bookDiv.className = `book status-${updateBook.status}`;
+            })
+            .catch(err => console.error('Erro ao atualizar status', err));
+        }
     </script>
 </body>
+
 </html>
