@@ -53,10 +53,12 @@
             data.forEach(book => {
                 const div = document.createElement('div');
                 div.className = 'book';
+                div.id = `book-${book.id}`;
                 div.innerHTML = `
                     <strong>${book.title}</strong><br>
                     Autor: ${book.author}<br>
                     Status: ${book.status}
+                    <button onclick='deleteBook(${book.id})'>Remover</button>
                 `;
                 list.appendChild(div);
             });
@@ -84,16 +86,30 @@
                 const list = document.getElementById('book-list');
                 const div = document.createElement('div');
                 div.className = 'book';
+                div.id = `book-${book.id}`;
                 div.innerHTML = `
                     <strong>${book.title}</strong><br>
                     Autor: ${book.author}<br>
                     Status: ${book.status}
+                    <button onclick='deleteBook(${book.id})'>Remover</button>
                 `;
                 list.appendChild(div);
                 document.getElementById('book-form').reset();
             })
-            .catch(err => console.error('Erro ao adicionar lviro', err));
+            .catch(err => console.error('Erro ao adicionar livro', err));
         });
+
+        function deleteBook(id) {
+            fetch(`http://localhost:8000/books/${id}`, {
+                method: 'DELETE'
+            })
+            .then(() => {
+                document.getElementById(`book-${id}`).remove();
+            })
+            .catch(err => console.error('Erro ao deletar livro', err));
+        }
+
+
     </script>
 </body>
 </html>
