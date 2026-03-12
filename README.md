@@ -58,7 +58,3 @@ Este projeto foi criado com foco em **aprendizado prático de backend**, integra
 ### Ferramentas
 - **Git & GitHub**
 - **VS Code**
-
-Docs (Swagger): http://localhost:8000/docs
-
-Frontend: abra frontend/index.html no navegador
