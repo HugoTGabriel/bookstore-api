@@ -4,7 +4,7 @@ from typing import Optional
 class BookCreate(BaseModel):
     title: str
     author: str
-    status: str
+    quantidade_disponivel: int = 1
 
 class BookUpdate(BaseModel):
-    status: Optional[str] = None
+    quantidade_disponivel: Optional[int] = None

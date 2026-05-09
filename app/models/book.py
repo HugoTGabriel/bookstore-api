@@ -5,4 +5,4 @@ class Book(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
     author: str
-    status: str #ex -> 'not_read', 'reading', 'read'
+    quantidade_disponivel: int = Field(default=1)
