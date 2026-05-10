@@ -52,15 +52,18 @@ def delete_book(book_id: int, session: Session = Depends(get_session)):
 @router.put('/{book_id}')
 def update_book(
     book_id: int,
-    updated_book: Book,
+    updated_book: BookCreate, # Usamos o schema atualizado
     session: Session = Depends(get_session)
 ):
     book = session.get(Book, book_id)
     if not book:
         raise HTTPException(status_code=404, detail='Book not found')
+    
     book.title = updated_book.title
     book.author = updated_book.author
-    book.status = updated_book.status
+    # Substituímos o 'status' pela realidade do acervo
+    book.quantidade_disponivel = updated_book.quantidade_disponivel 
+    
     session.add(book)
     session.commit()
     session.refresh(book)
