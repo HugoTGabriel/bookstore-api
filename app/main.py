@@ -5,6 +5,7 @@ from app.core.database import create_db_and_tables
 from app.routes import books
 from app.models import book, user, loan
 from app.routes import books, loans
+from app.routes import users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +28,7 @@ app.add_middleware(
 # 3. REGISTRO DOS ROUTERS
 app.include_router(books.router)
 app.include_router(loans.router)
+app.include_router(users.router)
 
 @app.get('/health')
 def health_check():

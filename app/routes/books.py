@@ -14,7 +14,7 @@ def creat_book(book: BookCreate, session: Session = Depends(get_session)):
     db_book = Book(
         title=book.title,
         author=book.author,
-        status=book.status
+        quantidade_disponivel=book.quantidade_disponivel 
     )
     session.add(db_book)
     session.commit()
@@ -61,22 +61,6 @@ def update_book(
     book.title = updated_book.title
     book.author = updated_book.author
     book.status = updated_book.status
-    session.add(book)
-    session.commit()
-    session.refresh(book)
-    return book
-
-@router.patch('/{book_id}')
-def update_status(
-    book_id: int,
-    book_update: BookUpdate,
-    session: Session = Depends(get_session)
-): 
-    book = session.get(Book, book_id)
-    if not book:
-        raise HTTPException(status_code=404, detail='Book not found')
-    if book_update.status is not None:
-        book.status = book_update.status
     session.add(book)
     session.commit()
     session.refresh(book)

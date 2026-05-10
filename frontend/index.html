@@ -4,173 +4,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha BookStore</title>
+    <title>BiblioTech - Painel de Controle</title>
     <style>
-        .container {
-            width: 100%;
-            max-width: 800px;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; }
+        h1 { color: #1a73e8; text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        h2 { color: #333; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        
+        /* Grid Layout para dividir a tela */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* Cards de Livros e Empréstimos */
+        .card { padding: 15px; margin: 15px 0; background: #fafafa; border-left: 5px solid #ccc; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card strong { display: block; font-size: 1.1em; margin-bottom: 5px; color: #202124; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; }
+        .badge-estoque { background-color: #34a853; }
+        .badge-zerado { background-color: #ea4335; }
+        .badge-ativo { background-color: #fbbc04; color: #000; }
+        .badge-devolvido { background-color: #80868b; }
 
-        body {
-            font-family: sans-serif;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
-        }
-
-        .header {
-            position: sticky;
-            top: 0;
-            background-color: #f5f5f5;
-            padding-bottom: 1rem;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        .book {
-            padding: 10px;
-            margin: 10px 0;
-            background: #fff;
-            border-left: 5px solid #0077cc;
-        }
-
-        .status-lendo {
-            border-left-color: #f1c40f;
-        }
-
-        .status-lido {
-            border-left-color: #2ecc71;
-        }
-
-        .status-pendente {
-            border-left-color: #e74c3c;
-        }
-
-        form {
-            margin-top: 2rem;
-        }
-
-        input,
-        select,
-        button {
-            margin: 0.3rem;
-            padding: 0.4rem;
-        }
+        /* Formulários e Botões */
+        form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input[type="text"], input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex-grow: 1; }
+        button { background-color: #1a73e8; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background-color: #1557b0; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button.btn-devolver { background-color: #ea4335; margin-top: 10px;}
+        button.btn-devolver:hover { background-color: #c5221f; }
     </style>
 </head>
 
 <body>
     <div class="container">
+        <h1>📚 BiblioTech - Gestão Universitária</h1>
 
-        <h1>Livros cadastrados</h1>
+        <div class="panel" style="margin-bottom: 20px;">
+            <h2>Adicionar Novo Título ao Acervo</h2>
+            <form id="book-form">
+                <input type="text" id="title" placeholder="Título do Livro" required>
+                <input type="text" id="author" placeholder="Autor" required>
+                <input type="number" id="qtd" placeholder="Qtd. Inicial" min="1" required style="max-width: 120px;">
+                <button type="submit">Cadastrar no Inventário</button>
+            </form>
+        </div>
 
-        <h2>Adicionar novo livro</h2>
-        <form id="book-form">
-            <input type="text" id="title" placeholder="Título" required>
-            <input type="text" id="author" placeholder="Autor" required>
-            <select id="status">
-                <option value="lendo">Lendo</option>
-                <option value="lido">Lido</option>
-                <option value="pendente">Pendente</option>
-            </select>
-            <button type="submit">Adicionar</button>
-        </form>
-        <div id="book-list"></div>
+        <div class="dashboard">
+            <div class="panel">
+                <h2>Acervo Geral</h2>
+                <div id="acervo-list">Carregando acervo...</div>
+            </div>
+
+            <div class="panel">
+                <h2>Meus Empréstimos (Aluno ID: 1)</h2>
+                <div id="aluno-status" style="margin-bottom: 10px; font-weight: bold; color: #5f6368;"></div>
+                <div id="emprestimos-list">Carregando histórico...</div>
+            </div>
+        </div>
     </div>
 
     <script>
-        fetch('http://localhost:8000/books/')
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById('book-list');
-                data.forEach(book => {
-                    const div = document.createElement('div');
-                    div.className = `book status-${book.status}`;
-                    div.id = `book-${book.id}`;
-                    div.innerHTML = `
-                    <strong>${book.title}</strong><br>
-                    Autor: ${book.author}<br>
-                    Status: <span id="status-${book.id}">${book.status}</span><br>
+        const API_URL = 'http://localhost:8000';
+        const ALUNO_ID = 1; // Simulando que o aluno logado é o ID 1
 
-                    <button onclick="updateStatus(${book.id}, 'lendo')">Lendo</button>
-                    <button onclick="updateStatus(${book.id}, 'lido')">Lido</button>
-                    <button onclick="updateStatus(${book.id}, 'pendente')">Pendente</button>
-                    
-                    <button onclick="deleteBook(${book.id})">Remover</button>
-                `;
-                    list.appendChild(div);
+        // Função principal de inicialização
+        async function init() {
+            await garantirAlunoTeste();
+            carregarAcervo();
+            carregarEmprestimos();
+        }
+
+        // HACK: Como recriamos o banco, garante que o Aluno 1 existe para a interface não quebrar
+        async function garantirAlunoTeste() {
+            try {
+                // Tenta consultar os empréstimos. Se der 404, o aluno não existe.
+                let res = await fetch(`${API_URL}/users/${ALUNO_ID}/loans`);
+                if (!res.ok) {
+                    console.warn("Aluno 1 não encontrado. Você precisa criar um usuário no banco de dados via Python ou Swagger para testar a interface 100%.");
+                    document.getElementById('aluno-status').innerText = "⚠️ Usuário não encontrado no banco.";
+                }
+            } catch (error) {
+                console.error("Erro ao conectar com a API", error);
+            }
+        }
+
+        // --- MÓDULO 1: ACERVO ---
+        function carregarAcervo() {
+            fetch(`${API_URL}/books/`)
+                .then(res => res.json())
+                .then(data => {
+                    const list = document.getElementById('acervo-list');
+                    list.innerHTML = '';
+                    if(data.length === 0) list.innerHTML = '<p>Nenhum livro no acervo.</p>';
+
+                    data.forEach(book => {
+                        const temEstoque = book.quantidade_disponivel > 0;
+                        const badgeClass = temEstoque ? 'badge-estoque' : 'badge-zerado';
+                        const badgeText = temEstoque ? `${book.quantidade_disponivel} Disponíveis` : 'Indisponível';
+                        
+                        list.innerHTML += `
+                            <div class="card">
+                                <strong>${book.title}</strong>
+                                <span>Autor: ${book.author}</span><br><br>
+                                <span class="badge ${badgeClass}">${badgeText}</span>
+                                <div style="margin-top: 10px;">
+                                    <button 
+                                        onclick="realizarEmprestimo(${book.id})" 
+                                        ${!temEstoque ? 'disabled' : ''}>
+                                        Pegar Emprestado
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
                 });
-            })
-            .catch(err => {
-                console.error("Erro ao carregar livros", err);
-            });
+        }
 
         document.getElementById("book-form").addEventListener("submit", function (e) {
             e.preventDefault();
-
             const newBook = {
                 title: document.getElementById('title').value,
                 author: document.getElementById('author').value,
-                status: document.getElementById('status').value
+                quantidade_disponivel: parseInt(document.getElementById('qtd').value)
             };
 
-            fetch('http://localhost:8000/books/', {
+            fetch(`${API_URL}/books/`, {
                 method: 'POST',
                 headers: { 'Content-type': 'application/json' },
                 body: JSON.stringify(newBook)
-            })
-                .then(res => res.json())
-                .then(book => {
-                    const list = document.getElementById('book-list');
-                    const div = document.createElement('div');
-                    div.className = `book status-${book.status}`;
-                    div.id = `book-${book.id}`;
-                    div.innerHTML = `
-                    <strong>${book.title}</strong><br>
-                    Autor: ${book.author}<br>
-                    Status: <span id="status-${book.id}">${book.status}</span><br>
-
-                        <button onclick="updateStatus(${book.id}, 'lendo')">Lendo</button>
-                        <button onclick="updateStatus(${book.id}, 'lido')">Lido</button>
-                        <button onclick="updateStatus(${book.id}, 'pendente')">Pendente</button>
-                    
-                        <button onclick="deleteBook(${book.id})">Remover</button>
-                    `;
-                    list.appendChild(div);
-                    document.getElementById('book-form').reset();
-                })
-                .catch(err => console.error('Erro ao adicionar livro', err));
+            }).then(res => res.json()).then(() => {
+                document.getElementById('book-form').reset();
+                carregarAcervo(); // Recarrega a prateleira
+            });
         });
 
-        function deleteBook(id) {
-            fetch(`http://localhost:8000/books/${id}`, {
-                method: 'DELETE'
-            })
-                .then(() => {
-                    document.getElementById(`book-${id}`).remove();
-                })
-                .catch(err => console.error('Erro ao deletar livro', err));
+        // --- MÓDULO 2: EMPRÉSTIMOS E DEVOLUÇÕES ---
+        function realizarEmprestimo(bookId) {
+            const loanData = { user_id: ALUNO_ID, book_id: bookId, dias_emprestimo: 7 };
+
+            fetch(`${API_URL}/loans/`, {
+                method: 'POST',
+                headers: { 'Content-type': 'application/json' },
+                body: JSON.stringify(loanData)
+            }).then(async res => {
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert("Bloqueio do Sistema: " + err.detail);
+                } else {
+                    carregarAcervo(); // Estoque deve diminuir
+                    carregarEmprestimos(); // Novo empréstimo deve aparecer
+                }
+            });
         }
 
-        function updateStatus(id, status) {
-            fetch(`http://localhost:8000/books/${id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status })
-            })
-            .then(res => res.json())
-            .then(updateBook => {
-                document.getElementById(`status-${id}`).innerText = updateBook.status;
-                const bookDiv = document.getElementById(`book-${id}`);
-                bookDiv.className = `book status-${updateBook.status}`;
-            })
-            .catch(err => console.error('Erro ao atualizar status', err));
+        function carregarEmprestimos() {
+            fetch(`${API_URL}/users/${ALUNO_ID}/loans`)
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    const list = document.getElementById('emprestimos-list');
+                    if (!data) return;
+
+                    document.getElementById('aluno-status').innerText = `Total Locado: ${data.total_emprestimos}`;
+                    list.innerHTML = '';
+                    
+                    if(data.historico.length === 0) list.innerHTML = '<p>Nenhum empréstimo ativo.</p>';
+
+                    data.historico.forEach(loan => {
+                        const isAtivo = loan.status === 'ativo';
+                        const badgeClass = isAtivo ? 'badge-ativo' : 'badge-devolvido';
+                        
+                        list.innerHTML += `
+                            <div class="card" style="border-left-color: ${isAtivo ? '#fbbc04' : '#80868b'}">
+                                <strong>Livro ID: ${loan.book_id}</strong>
+                                <span>Emprestado em: ${loan.data_emprestimo}</span><br>
+                                <span>Devolver até: ${loan.data_devolucao_prevista}</span><br><br>
+                                <span class="badge ${badgeClass}">${loan.status.toUpperCase()}</span>
+                                
+                                ${isAtivo ? `
+                                <div style="margin-top: 10px;">
+                                    <button class="btn-devolver" onclick="devolverLivro(${loan.id})">Devolver Exemplar</button>
+                                </div>
+                                ` : `
+                                <div style="margin-top: 10px; font-size: 0.9em; color: #555;">
+                                    Devolvido em: ${loan.data_devolucao_real}
+                                </div>
+                                `}
+                            </div>
+                        `;
+                    });
+                });
         }
+
+        function devolverLivro(loanId) {
+            fetch(`${API_URL}/loans/${loanId}/return`, {
+                method: 'PATCH'
+            }).then(async res => {
+                const result = await res.json();
+                if (res.ok) {
+                    // AQUI A MÁGICA FINANCEIRA APARECE PARA O USUÁRIO
+                    if (result.multa_a_pagar > 0) {
+                        alert(`DEVOLUÇÃO COM ATRASO!\nDias em atraso: ${result.dias_atraso}\nMulta Gerada: R$ ${result.multa_a_pagar.toFixed(2)}\n\nO sistema bloqueou seu perfil até o pagamento.`);
+                    } else {
+                        alert("Devolução realizada dentro do prazo. Obrigado!");
+                    }
+                    carregarAcervo(); // O livro volta para a prateleira
+                    carregarEmprestimos(); // O status muda para devolvido
+                } else {
+                    alert("Erro: " + result.detail);
+                }
+            });
+        }
+
+        // Roda ao abrir a página
+        init();
     </script>
 </body>
-
 </html>
